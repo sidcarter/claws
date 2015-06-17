@@ -1,6 +1,9 @@
 (ns claws.core
   (:require [amazonica.aws.ec2 :as ec2]
             [amazonica.aws.elasticloadbalancing :as elb]
+            [amazonica.aws.rds :as rds]
+            [amazonica.aws.cloudwatch :as cw]
+            [clojure.data.json :as json]
             [clojure.tools.cli :refer [parse-opts]]
             [clojure.string :as string])
   (:gen-class claws.core))
@@ -8,7 +11,7 @@
 (def cli-options
   [
     ;; list all the instances or security groups
-    ["-l" "--list ENTITY" "list entity - either instances, vpcs, elbs or security_groups."]
+    ["-l" "--list ENTITY" "list entity - either instances, vpcs, dbs, elbs or security_groups."]
     ["-h" "--help"]
     ])
 
@@ -46,12 +49,36 @@
     (doseq [sg (sgs)]
       (println (str (:group-id sg) " - " (:group-name sg))))))
 
-(defn instances
+(defn ec2-instances
   []
-  (map #(select-keys % [:instance-id :state :tags :private-ip-address])
+  (let [instances (map #(select-keys % [:instance-id :state :key-name :private-ip-address])
     (flatten
       (map
-        :instances (:reservations (ec2/describe-instances))))))
+        :instances (:reservations (ec2/describe-instances)))))]
+    (doseq [instance instances]
+      (let [id (instance :instance-id)
+            status ((instance :state) :name)
+            keyname (instance :key-name)
+            ip-address (instance :private-ip-address)]
+        (println id ip-address keyname status)))))
+
+(defn rds-dbs
+  []
+  (let [dbs (map #(select-keys % [:dbinstance-identifier :engine-version :dbinstance-status])
+              ((rds/describe-dbinstances) :dbinstances))]
+    (doseq [db dbs]
+      (println (db :dbinstance-identifier)))))
+
+(defn alarms
+  []
+  (let [metrics (map #(select-keys % [:threshold :namespace :alarm-name :comparison-operator :state-value :state-reason-data])
+    ((cw/describe-alarms) :metric-alarms))]
+    (doseq [metric metrics]
+      (let [reason-data (json/read-str (metric :state-reason-data) :key-fn keyword)
+            operator (metric :comparison-operator)
+            threshold (metric :threshold)]
+        (when (not= (metric :state-value) "OK")
+          (println reason-data operator threshold))))))
 
 (defn -main
   "I am the main."
@@ -59,8 +86,10 @@
   (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
     (cond (:list options)
       (case (:list options)
-        "instances" (println (instances))
+        "instances" (ec2-instances)
         "security_groups" (sgs :print)
+        "alarms" (println (alarms))
+        "dbs" (rds-dbs)
         "elbs" (println (count (elbs)))
         (print_usage summary))
-      :else (print_usage summary))))
+      :else (ec2-instances))))
