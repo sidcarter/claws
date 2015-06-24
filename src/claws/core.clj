@@ -51,16 +51,17 @@
 
 (defn ec2-instances
   []
-  (let [instances (map #(select-keys % [:instance-id :state :key-name :private-ip-address])
+  (let [instances (map #(select-keys % [:instance-id :state :key-name :private-ip-address :public-dns-name :tags])
     (flatten
       (map
         :instances (:reservations (ec2/describe-instances)))))]
     (doseq [instance instances]
       (let [id (instance :instance-id)
             status ((instance :state) :name)
-            keyname (instance :key-name)
-            ip-address (instance :private-ip-address)]
-        (println id ip-address keyname status)))))
+            dnsname (instance :public-dns-name)
+            ip-address (instance :private-ip-address)
+            tags (instance :tags)]
+        (println id ip-address dnsname status)))))
 
 (defn rds-dbs
   []
