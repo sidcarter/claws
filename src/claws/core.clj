@@ -51,7 +51,7 @@
 
 (defn ec2-instances
   []
-  (let [instances (map #(select-keys % [:instance-id :state :key-name :private-ip-address :public-dns-name :tags])
+  (let [instances (map #(select-keys % [:instance-id :state :key-name :security-groups :private-ip-address :public-dns-name :tags])
     (flatten
       (map
         :instances (:reservations (ec2/describe-instances)))))]
@@ -61,7 +61,7 @@
             dnsname (instance :public-dns-name)
             ip-address (instance :private-ip-address)
             tags (instance :tags)]
-        (println id ip-address dnsname status)))))
+        (println id ip-address tags dnsname status)))))
 
 (defn rds-dbs
   []
