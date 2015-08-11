@@ -6,6 +6,6 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/data.json "0.2.6"]
                  [amazonica "0.3.30"]
-                 [org.clojure/tools.cli "0.3.1"]]
+                 [org.clojure/tools.cli "0.3.2"]]
   :main ^:skip-aot claws.core
   :profiles {:uberjar {:aot :all}})
