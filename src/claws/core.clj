@@ -26,6 +26,11 @@
        ""] (string/join \newline))]
     (println usage)))
 
+(defn get-name
+  [tags]
+  ((reduce into {}
+     (filter #(= "Name" (% :key)) tags)) :value))
+
 (defn regions
   []
   ((ec2/describe-regions) :regions))
@@ -38,7 +43,10 @@
 
 (defn vpcs
   []
-  ((ec2/describe-vpcs) :vpcs))
+  (let [pcs (map #(select-keys % [:vpc-id :tags])
+              ((ec2/describe-vpcs) :vpcs))]
+    (doseq [pc pcs]
+      (println (pc :vpc-id) (get-name (pc :tags))))))
 
 (defn sgs
   ([]
@@ -61,7 +69,7 @@
             dnsname (instance :public-dns-name)
             ip-address (instance :private-ip-address)
             tags (instance :tags)]
-        (println id ip-address tags dnsname status)))))
+        (println id ip-address (get-name tags) dnsname status)))))
 
 (defn rds-dbs
   []
@@ -91,6 +99,7 @@
         "security_groups" (sgs :print)
         "alarms" (println (alarms))
         "dbs" (rds-dbs)
+        "vpcs" (vpcs)
         "elbs" (println (count (elbs)))
         (print_usage summary))
       :else (ec2-instances))))
