@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/data.json "0.2.6"]
-                 [amazonica "0.3.30"]
+                 [amazonica "0.3.32"]
                  [org.clojure/tools.cli "0.3.2"]]
   :main ^:skip-aot claws.core
   :profiles {:uberjar {:aot :all}})
